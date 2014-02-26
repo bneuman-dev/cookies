@@ -35,7 +35,6 @@ var CookieView = function(cookie) {
 
   this.elem.find("button").on('click', function(event) {
     self.add_to_oven(self.cookie);
-
   });
 }
 
@@ -43,76 +42,107 @@ CookieView.prototype.add_to_oven = function(cookie) {
   Oven.add_to_oven(cookie);
 }
 
+var Rack = function(selector) {
+  this.selector = selector;
+  this.cookies = null;
+  this.bake_time = 0;
+  this.view = new RackView(this);
+}
+
+Rack.prototype.empty = function() {
+  return (!this.cookies);
+}
+
+Rack.prototype.add_cookies = function(cookies) {
+  this.cookies = cookies;
+  this.view.update_display();
+}
+
+Rack.prototype.bake = function() {
+  this.bake_time += 1;
+  this.view.update_display();
+}
+
+Rack.prototype.remove_cookies = function() {
+  this.cookies = null;
+}
+
+Rack.prototype.doneness = function() {
+  return this.bake_time / this.cookies.bake_time;
+}
+
+var RackView = function(rack) {
+  this.rack = rack;
+}
+
+RackView.prototype.update_display = function() {
+  $(this.rack.selector).html(this.html());
+}
+
+// RackView.prototype.bake = function() {
+//   this.rack.bake();
+//   this.update_display();
+// }
+
+RackView.prototype.html = function() {
+  if (!this.rack.cookies) {
+    return "[empty]";
+  }
+
+  else {
+    return this.rack.cookies.name + " - " + this.doneness();
+  }
+}
+
+RackView.prototype.doneness = function() {
+  var ratio = this.rack.doneness();
+
+  if (ratio == 0) {
+    return "raw";
+  }
+
+  else if (ratio < 1) {
+    return "gooey";
+  }
+
+  else if (ratio < 1.1) {
+    return "perfect";
+  }
+
+  else if (ratio > 1.1 && ratio <= 1.3) {
+    return "crispy";
+  }
+
+  else if (ratio > 1.3){
+    return "burnt";
+  }
+}
+
 var Oven = {
-  cookies: [],
-  racks: {rack_0: null,
-          rack_1: null,
-          rack_2: null},
-
-  baked_time: 0,
-
-  add_batch: function(batch) {
-    this.cookies.push(batch);
-  },
+  racks: [new Rack("#rack_0"),
+          new Rack("#rack_1"),
+          new Rack("#rack_2")],
 
   add_to_oven: function(batch) {
-    var html = this.make_cookie_display(batch);
-
-    if (!this.racks.rack_0) {
-      this.racks.rack_0 = batch;
-      $("#rack_0").html(html);
+    if (this.racks[0].empty()) {
+      this.racks[0].add_cookies(batch);
     }
 
-    else if (!this.racks.rack_1) {
-      this.racks.rack_1 = batch;
-      $("#rack_1").html(html);
+    else if (this.racks[1].empty()) {
+      this.racks[1].add_cookies(batch);
     }
 
-    else if (!this.racks.rack_2) {
-      this.racks.rack_2 = batch;
-      $("#rack_2").html(html);
+    else if (this.racks[2].empty()) {
+      this.racks[2].add_cookies(batch);
     }
-  },
-
-  make_cookie_display: function(batch) {
-    return batch.name + " - " + this.doneness(batch);
   },
 
   bake: function() {
-    this.baked_time += 1;
-    for (rack in this.racks) {
-      if (this.racks.hasOwnProperty(rack) && this.racks[rack]) {
-        var selector = "#" + rack;
-        console.log(selector);
-        var html = this.make_cookie_display(this.racks[rack]);
-        console.log(html);
-        $(selector).html(html);
+    for (i=0;i < this.racks.length;i++) {
+      if (!this.racks[i].empty()) {
+        this.racks[i].bake();
       }
     }
   },
-
-  doneness: function(batch) {
-    var ratio = this.baked_time / batch.bake_time;
-
-    if (ratio == 0) {
-      return "raw";
-    }
-
-    else if (ratio < 1) {
-      return "gooey";
-    }
-
-    else if (ratio < 1.1) {
-      return "perfect";
-    }
-
-    else if (ratio > 1.1 && ratio <= 1.3) {
-      return "crispy";
-    }
-
-    else if (ratio > 1.3){
-      return "burnt";
-    }
-  }
 }
 
